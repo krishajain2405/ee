@@ -27,6 +27,42 @@ import firebase_admin
 from firebase_admin import credentials, firestore, db
 from firebase_admin.exceptions import FirebaseError
 
+
+
+
+FIREBASE_URL = "https://smart-bin-7efab-default-rtdb.firebaseio.com"
+HF_API_KEY = "AIzaSyAfDSZS8t7tNm2C9y8YCR-N_KTMQ5kKdUw"  # ⚠️ recommend moving to secrets later
+AI_MODEL_URL = "https://api-inference.huggingface.co/models/openai/clip-vit-large-patch14"
+@st.cache_data(ttl=5)  # refresh every 5 seconds
+def fetch_live_data():
+    try:
+        response = requests.get(
+            f"{FIREBASE_URL}/bins.json",
+            timeout=5
+        )
+
+        if response.status_code == 200:
+            data = response.json()
+            return data if data else {}
+        else:
+            return {}
+
+    except Exception as e:
+        return {}
+st.subheader("📡 Live Bin Status (Firebase)")
+
+live_data = fetch_live_data()
+
+if not live_data:
+    st.warning("No live data available from Firebase.")
+else:
+    for bin_id, bin_info in live_data.items():
+        fill = bin_info.get("fill_level", 0)
+        location = bin_info.get("location", "Unknown")
+
+        st.write(f"🗑️ **Bin {bin_id}** — {location}")
+        st.progress(min(fill / 100, 1.0))
+
 # AI/ML for Image Classification
 try:
     from transformers import pipeline
